@@ -10,6 +10,8 @@ sourceCompatibility = 1.8
 
 repositories {
 	mavenCentral()
+	maven { url 'https://build.shibboleth.net/nexus/content/repositories/releases/' }
+	maven { url 'https://repository.mulesoft.org/releases/' }
 }
 
 dependencies {
@@ -17,9 +19,8 @@ dependencies {
 			'org.springframework.boot:spring-boot-starter-web:2.2.0.RELEASE',
 			'org.springframework.boot:spring-boot-starter-thymeleaf:2.2.0.RELEASE',
 			'org.springframework.boot:spring-boot-starter-test:2.2.0.RELEASE',
-			'org.springframework.security:spring-security-test:5.2.0.RELEASE'
-
-
+			'org.springframework.security:spring-security-test:5.2.0.RELEASE',
+			'org.springframework.security.extensions:spring-security-saml-dsl-core:1.0.5.RELEASE'
 
 	testCompile 'junit:junit:4.12'
 }
