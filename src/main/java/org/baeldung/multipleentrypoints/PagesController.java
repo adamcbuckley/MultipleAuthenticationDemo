@@ -96,6 +96,8 @@ public class PagesController {
 			principleStr = "AnonymousAuthenticationToken";
 		}
 
-		System.err.println("endpoint='" + endpoint + "', principle='" + principleStr + "', authorities='" + authentication.getAuthorities() + "'");
+		String msg = "endpoint='" + endpoint + "', principle='" + principleStr + "'";
+		if (authentication != null) msg += ", authorities='" + authentication.getAuthorities() + "'";
+		System.err.println(msg);
 	}
 }
