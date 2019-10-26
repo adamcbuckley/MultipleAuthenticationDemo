@@ -1,9 +1,14 @@
 package org.baeldung.multipleentrypoints;
 
-import org.opensaml.saml2.core.impl.NameIDImpl;
+import org.opensaml.saml2.core.Assertion;
+import org.opensaml.saml2.core.impl.AbstractNameIDType;
+import org.opensaml.ws.message.encoder.MessageEncodingException;
+import org.opensaml.xml.util.XMLHelper;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.saml.SAMLCredential;
+import org.springframework.security.saml.util.SAMLUtil;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 
@@ -65,12 +70,25 @@ public class PagesController {
 		final String principleStr;
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 		if (authentication == null) {
-            principleStr = "(No session)";
+			principleStr = "(No session)";
 		} else if (!(authentication instanceof AnonymousAuthenticationToken)) {
+
+			if (authentication.getCredentials() != null && authentication.getCredentials() instanceof SAMLCredential) {
+				try {
+					final SAMLCredential credential = (SAMLCredential) authentication.getCredentials();
+					final Assertion authenticationAssertion = credential.getAuthenticationAssertion();
+					final String xmlStr = XMLHelper.nodeToString(SAMLUtil.marshallMessage(authenticationAssertion));
+					System.out.println("\n\n" + xmlStr + "\n\n");
+				} catch (MessageEncodingException e) {
+					throw new RuntimeException(e);
+				}
+			}
+
 			final Object principal = authentication.getPrincipal();
 
-			if (principal instanceof NameIDImpl) {
-				principleStr = ((NameIDImpl) principal).getValue();
+			if (principal instanceof AbstractNameIDType) {
+				final AbstractNameIDType p = (AbstractNameIDType) principal;
+				principleStr = p.getValue();
 			} else {
 				principleStr = authentication.getName();
 			}
@@ -78,9 +96,6 @@ public class PagesController {
 			principleStr = "AnonymousAuthenticationToken";
 		}
 
-
-		System.err.println("endpoint:'" + endpoint + "', principle='" + principleStr + "'");
+		System.err.println("endpoint='" + endpoint + "', principle='" + principleStr + "', authorities='" + authentication.getAuthorities() + "'");
 	}
-
-
 }

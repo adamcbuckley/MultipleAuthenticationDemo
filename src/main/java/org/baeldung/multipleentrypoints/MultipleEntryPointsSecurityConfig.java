@@ -7,14 +7,22 @@ import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
+import org.springframework.security.saml.SAMLCredential;
+import org.springframework.security.saml.userdetails.SAMLUserDetailsService;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.springframework.security.extensions.saml2.config.SAMLConfigurer.saml;
 
@@ -49,6 +57,28 @@ public class MultipleEntryPointsSecurityConfig {
 
 
 	/**
+	 * Define SAML user details service
+	 */
+	@Bean
+	public static SAMLUserDetailsService samlUserDetailsService() {
+		final SAMLUserDetailsService manager = new SAMLUserDetailsService() {
+			@Override
+			public Object loadUserBySAML(SAMLCredential credential) throws UsernameNotFoundException {
+				final String userId = credential.getNameID().getValue();
+				final String[] groups = credential.getAttributeAsStringArray("GROUPS");
+				final List<GrantedAuthority> authorities = new ArrayList<>();
+				for (final String group : groups) {
+					authorities.add(new SimpleGrantedAuthority(group));
+				}
+				return new User(userId, "", authorities);
+			}
+		};
+
+		return manager;
+	}
+
+
+	/**
 	 * Define first entry point, /admin/**
 	 */
 	@Configuration
@@ -75,27 +105,24 @@ public class MultipleEntryPointsSecurityConfig {
 
 			http.authorizeRequests()
 					.antMatchers("/saml*").permitAll()
-					.antMatchers("/admin/**").authenticated();
-
-//			http.antMatcher("/admin/**")
-//				.authorizeRequests().anyRequest().hasRole("ADMIN").and()
-//				.exceptionHandling().accessDeniedPage("/403");
+					.antMatchers("/admin/**").hasRole("ADMIN")
+					.and().exceptionHandling().accessDeniedPage("/403");
 
 			// @formatter:off
-			http.apply(saml())
-					.serviceProvider()
-						.keyStore()
-							.storeFilePath(this.keyStoreFilePath)
-							.password(this.password)
-							.keyname(this.keyAlias)
-							.keyPassword(this.password)
-							.and()
-						.protocol("https")
-						.hostname(String.format("%s:%s", "localhost", this.port))
-						.basePath("/")
+			http.apply(saml()).userDetailsService(samlUserDetailsService())
+				.serviceProvider()
+					.keyStore()
+						.storeFilePath(this.keyStoreFilePath)
+						.password(this.password)
+						.keyname(this.keyAlias)
+						.keyPassword(this.password)
 						.and()
-					.identityProvider()
-					.metadataFilePath(this.metadataUrl);
+					.protocol("https")
+					.hostname(String.format("%s:%s", "localhost", this.port))
+					.basePath("/")
+					.and()
+				.identityProvider()
+				.metadataFilePath(this.metadataUrl);
 			// @formatter:on
 		}
 	}
