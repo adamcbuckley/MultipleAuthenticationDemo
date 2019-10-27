@@ -1,4 +1,4 @@
-package org.baeldung.multipleentrypoints;
+package com.example;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -11,11 +11,9 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
-import org.springframework.security.saml.SAMLCredential;
 import org.springframework.security.saml.userdetails.SAMLUserDetailsService;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
@@ -28,7 +26,7 @@ import static org.springframework.security.extensions.saml2.config.SAMLConfigure
 
 @Configuration
 @EnableWebSecurity
-public class MultipleEntryPointsSecurityConfig {
+public class SecurityConfig {
 
 	/**
 	 * Define a simple in-memory user database
@@ -61,20 +59,15 @@ public class MultipleEntryPointsSecurityConfig {
 	 */
 	@Bean
 	public static SAMLUserDetailsService samlUserDetailsService() {
-		final SAMLUserDetailsService manager = new SAMLUserDetailsService() {
-			@Override
-			public Object loadUserBySAML(SAMLCredential credential) throws UsernameNotFoundException {
-				final String userId = credential.getNameID().getValue();
-				final String[] groups = credential.getAttributeAsStringArray("GROUPS");
-				final List<GrantedAuthority> authorities = new ArrayList<>();
-				for (final String group : groups) {
-					authorities.add(new SimpleGrantedAuthority(group));
-				}
-				return new User(userId, "", authorities);
+		return credential -> {
+			final String userId = credential.getNameID().getValue();
+			final String[] groups = credential.getAttributeAsStringArray("GROUPS");
+			final List<GrantedAuthority> authorities = new ArrayList<>();
+			for (final String group : groups) {
+				authorities.add(new SimpleGrantedAuthority(group));
 			}
+			return new User(userId, "", authorities);
 		};
-
-		return manager;
 	}
 
 
@@ -140,7 +133,7 @@ public class MultipleEntryPointsSecurityConfig {
 					.authorizeRequests().anyRequest().hasRole("USER")
 					.and().formLogin().loginProcessingUrl("/user/login")
 					.failureUrl("/userLogin?error=loginError").defaultSuccessUrl("/user/myUserPage")
-					.and().logout().logoutUrl("/user/logout").logoutSuccessUrl("/multipleHttpLinks")
+					.and().logout().logoutUrl("/user/logout").logoutSuccessUrl("/")
 					.deleteCookies("JSESSIONID")
 					.and().exceptionHandling()
 					.defaultAuthenticationEntryPointFor(loginUrlauthenticationEntryPointWithWarning(), new AntPathRequestMatcher("/user/private/**"))
