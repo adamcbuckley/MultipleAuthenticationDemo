@@ -26,54 +26,78 @@ import static org.springframework.security.extensions.saml2.config.SAMLConfigure
 public class SecurityConfig {
 
 	/**
-	 * Define a simple in-memory user database
+	 * /user/**
 	 */
-	@Bean
-	public UserDetailsService userDetailsService() {
-		final InMemoryUserDetailsManager manager = new InMemoryUserDetailsManager();
+	@Configuration
+	@Order(1)
+	public static class UserConfigurationAdapter extends WebSecurityConfigurerAdapter {
 
-		manager.createUser(User
-				.withUsername("user")
-				.password(encoder().encode("userPass"))
-				.roles("USER").build());
+		@Bean
+		public UserDetailsService userDetailsService() {
+			final InMemoryUserDetailsManager manager = new InMemoryUserDetailsManager();
 
-		manager.createUser(User
-				.withUsername("admin")
-				.password(encoder().encode("adminPass"))
-				.roles("ADMIN").build());
+			manager.createUser(User
+					.withUsername("user")
+					.password(encoder().encode("password"))
+					.roles("USER").build());
 
-		return manager;
-	}
+			// Can be used to gain access to the admin section, if SAML isn't available
+			manager.createUser(User
+					.withUsername("admin")
+					.password(encoder().encode("password"))
+					.roles("ADMIN").build());
 
-	@Bean
-	public PasswordEncoder encoder() {
-		return new BCryptPasswordEncoder();
+			return manager;
+		}
+
+		@Bean
+		public PasswordEncoder encoder() {
+			return new BCryptPasswordEncoder();
+		}
+
+		protected void configure(HttpSecurity http) throws Exception {
+			// @formatter:off
+			http.antMatcher("/user/**")
+					.authorizeRequests()
+						.anyRequest().hasRole("USER")
+						.and()
+					.formLogin()
+						.loginPage("/login.html")
+						.loginProcessingUrl("/user/login")
+						.failureUrl("/login.html?error=Login+failed")
+						.defaultSuccessUrl("/user/user-profile")
+						.and()
+					.logout()
+						.logoutUrl("/user/logout")
+						.logoutSuccessUrl("/")
+						.deleteCookies("JSESSIONID")
+						.and()
+					.csrf().disable();
+			// @formatter:on
+		}
 	}
 
 
 	/**
-	 * Define SAML user details service
+	 * Define /guest/**
 	 */
-	@Bean
-	public static SAMLUserDetailsService samlUserDetailsService() {
-		return credential -> {
-			final String userId = credential.getNameID().getValue();
-			final String[] groups = credential.getAttributeAsStringArray("GROUPS");
-			final List<GrantedAuthority> authorities = new ArrayList<>();
-			for (final String group : groups) {
-				authorities.add(new SimpleGrantedAuthority(group));
-			}
-			return new User(userId, "", authorities);
-		};
+	@Configuration
+	@Order(2)
+	public static class PublicConfigurationAdapter extends WebSecurityConfigurerAdapter {
+		protected void configure(HttpSecurity http) throws Exception {
+			http.antMatcher("/guest/**")
+					.authorizeRequests()
+					.anyRequest().permitAll();
+		}
 	}
 
 
 	/**
-	 * Define first entry point, /admin/**
+	 * Define /admin/**
 	 */
 	@Configuration
 	@Order(3)
-	public static class App1ConfigurationAdapter extends WebSecurityConfigurerAdapter {
+	public static class AdminConfigurationAdapter extends WebSecurityConfigurerAdapter {
 
 		@Value("${security.saml2.metadata-url}")
 		String metadataUrl;
@@ -90,6 +114,24 @@ public class SecurityConfig {
 		@Value("${server.ssl.key-store}")
 		String keyStoreFilePath;
 
+
+		/**
+		 * Define SAML user details service
+		 */
+		@Bean
+		public static SAMLUserDetailsService samlUserDetailsService() {
+			return credential -> {
+				final String userId = credential.getNameID().getValue();
+				final String[] groups = credential.getAttributeAsStringArray("GROUPS");
+				final List<GrantedAuthority> authorities = new ArrayList<>();
+				for (final String group : groups) {
+					authorities.add(new SimpleGrantedAuthority(group));
+				}
+				return new User(userId, "", authorities);
+			};
+		}
+
+
 		@Override
 		protected void configure(HttpSecurity http) throws Exception {
 
@@ -97,52 +139,27 @@ public class SecurityConfig {
 					.antMatchers("/saml*").permitAll()
 					.antMatchers("/admin/**").hasRole("ADMIN");
 
+			/*
+			 * TODO: This code doesn't work... the  /saml urls throw a 404 Not Found
+			 * http.antMatcher("/admin/**").apply(saml()) ...
+			 */
+
 			// @formatter:off
-			http.apply(saml()).userDetailsService(samlUserDetailsService())
-				.serviceProvider()
-					.keyStore()
-						.storeFilePath(this.keyStoreFilePath)
-						.password(this.password)
-						.keyname(this.keyAlias)
-						.keyPassword(this.password)
+			http.apply(saml())
+					.userDetailsService(samlUserDetailsService())
+					.serviceProvider()
+						.keyStore()
+							.storeFilePath(this.keyStoreFilePath)
+							.password(this.password)
+							.keyname(this.keyAlias)
+							.keyPassword(this.password)
+							.and()
+						.protocol("https")
+						.hostname(String.format("%s:%s", "localhost", this.port))
+						.basePath("/")
 						.and()
-					.protocol("https")
-					.hostname(String.format("%s:%s", "localhost", this.port))
-					.basePath("/")
-					.and()
-				.identityProvider()
-				.metadataFilePath(this.metadataUrl);
+					.identityProvider().metadataFilePath(this.metadataUrl);
 			// @formatter:on
-		}
-	}
-
-
-	/**
-	 * Define second entry point, /user/**
-	 */
-	@Configuration
-	@Order(1)
-	public static class App2ConfigurationAdapter extends WebSecurityConfigurerAdapter {
-
-		protected void configure(HttpSecurity http) throws Exception {
-			http.antMatcher("/user/**")
-					.authorizeRequests().anyRequest().hasRole("USER")
-					.and().formLogin().loginPage("/login.html").loginProcessingUrl("/user/login").failureUrl("/login.html?error=Login+failed").defaultSuccessUrl("/user/user-profile")
-					.and().logout().logoutUrl("/user/logout").logoutSuccessUrl("/").deleteCookies("JSESSIONID")
-					.and().csrf().disable();
-		}
-	}
-
-
-	/**
-	 * Define third entry point, /guest/**
-	 */
-	@Configuration
-	@Order(2)
-	public static class App3ConfigurationAdapter extends WebSecurityConfigurerAdapter {
-
-		protected void configure(HttpSecurity http) throws Exception {
-			http.antMatcher("/guest/**").authorizeRequests().anyRequest().permitAll();
 		}
 	}
 }
