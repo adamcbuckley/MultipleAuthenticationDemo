@@ -14,7 +14,6 @@ repositories {
 dependencies {
 	compile 'org.springframework.boot:spring-boot-starter-security:2.2.0.RELEASE',
 			'org.springframework.boot:spring-boot-starter-web:2.2.0.RELEASE',
-			'org.springframework.boot:spring-boot-starter-thymeleaf:2.2.0.RELEASE',
 			'org.springframework.security.extensions:spring-security-saml-dsl-core:1.0.5.RELEASE'
 }
 

@@ -127,7 +127,7 @@ public class SecurityConfig {
 		protected void configure(HttpSecurity http) throws Exception {
 			http.antMatcher("/user/**")
 					.authorizeRequests().anyRequest().hasRole("USER")
-					.and().formLogin().loginProcessingUrl("/user/login").failureUrl("/login?error=Login+failed").defaultSuccessUrl("/user/user-profile")
+					.and().formLogin().loginPage("/login.html").loginProcessingUrl("/user/login").failureUrl("/login.html?error=Login+failed").defaultSuccessUrl("/user/user-profile")
 					.and().logout().logoutUrl("/user/logout").logoutSuccessUrl("/").deleteCookies("JSESSIONID")
 					.and().csrf().disable();
 		}
