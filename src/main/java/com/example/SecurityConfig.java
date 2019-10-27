@@ -15,9 +15,6 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.saml.userdetails.SAMLUserDetailsService;
-import org.springframework.security.web.AuthenticationEntryPoint;
-import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -98,8 +95,7 @@ public class SecurityConfig {
 
 			http.authorizeRequests()
 					.antMatchers("/saml*").permitAll()
-					.antMatchers("/admin/**").hasRole("ADMIN")
-					.and().exceptionHandling().accessDeniedPage("/403");
+					.antMatchers("/admin/**").hasRole("ADMIN");
 
 			// @formatter:off
 			http.apply(saml()).userDetailsService(samlUserDetailsService())
@@ -131,25 +127,9 @@ public class SecurityConfig {
 		protected void configure(HttpSecurity http) throws Exception {
 			http.antMatcher("/user/**")
 					.authorizeRequests().anyRequest().hasRole("USER")
-					.and().formLogin().loginProcessingUrl("/user/login")
-					.failureUrl("/userLogin?error=loginError").defaultSuccessUrl("/user/myUserPage")
-					.and().logout().logoutUrl("/user/logout").logoutSuccessUrl("/")
-					.deleteCookies("JSESSIONID")
-					.and().exceptionHandling()
-					.defaultAuthenticationEntryPointFor(loginUrlauthenticationEntryPointWithWarning(), new AntPathRequestMatcher("/user/private/**"))
-					.defaultAuthenticationEntryPointFor(loginUrlauthenticationEntryPoint(), new AntPathRequestMatcher("/user/general/**"))
-					.accessDeniedPage("/403")
+					.and().formLogin().loginProcessingUrl("/user/login").failureUrl("/login?error=Login+failed").defaultSuccessUrl("/user/user-profile")
+					.and().logout().logoutUrl("/user/logout").logoutSuccessUrl("/").deleteCookies("JSESSIONID")
 					.and().csrf().disable();
-		}
-
-		@Bean
-		public AuthenticationEntryPoint loginUrlauthenticationEntryPoint() {
-			return new LoginUrlAuthenticationEntryPoint("/userLogin");
-		}
-
-		@Bean
-		public AuthenticationEntryPoint loginUrlauthenticationEntryPointWithWarning() {
-			return new LoginUrlAuthenticationEntryPoint("/userLoginWithWarning");
 		}
 	}
 

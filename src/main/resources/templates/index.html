@@ -1,16 +1,60 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="en">
 <head>
-    <meta charset="ISO-8859-1"/>
-    <title>Multiple Http Elements Links</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+          integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <title>Multiple authentication demo</title>
 </head>
-<body>
 
-<a th:href="@{/admin/myAdminPage}">Admin page</a>
-<br/>
-<a th:href="@{/user/general/myUserPage}">User page</a>
-<br/>
-<a th:href="@{/guest/myGuestPage}">Guest page</a>
+<body style="padding-top: 5rem;">
+<nav class="navbar navbar-expand-md navbar-dark bg-dark fixed-top">
+    <a class="navbar-brand mr-auto" href="/">Multiple authentication demo</a>
 
+    <div>
+        <ul class="navbar-nav ">
+            <li class="nav-item">
+                <a th:href="@{/user/logout}" class="nav-link">Logout</a>
+            </li>
+        </ul>
+    </div>
+</nav>
+
+
+<div class="container">
+    <p>&nbsp;</p>
+    <div class="row">
+        <div class="col-sm-4">
+            <div class="card">
+                <h5 class="card-header">Admin API</h5>
+                <div class="card-body">
+                    <p class="card-text">Authenticated using SAML</p>
+                    <a th:href="@{/admin/admin-profile}" class="card-link">Admin request</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-4">
+            <div class="card">
+                <h5 class="card-header">User API</h5>
+                <div class="card-body">
+                    <p class="card-text">Authenticated using form login</p>
+                    <a th:href="@{/user/user-profile}" class="card-link">User request</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-4">
+            <div class="card">
+                <h5 class="card-header">Guest API</h5>
+                <div class="card-body">
+                    <p class="card-text">Unauthenticated</p>
+                    <a th:href="@{/guest/news}" class="card-link">Guest request</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 </body>
 </html>

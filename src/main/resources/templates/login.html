@@ -1,27 +1,30 @@
 <html>
 <head></head>
-
 <body>
-    <h1>Login</h1>
+<h1>Login</h1>
 
-    <form name='f' action="user/login" method='POST'>
+<form name='form' action="user/login" method='POST'>
+    <table>
+        <tr>
+            <td>Username:</td>
+            <td><input type="text" name="username"/></td>
+        </tr>
+        <tr>
+            <td>Password:</td>
+            <td><input type="password" name="password"/></td>
+        </tr>
 
-        <table>
-            <tr>
-                <td>Username:</td>
-                <td><input type="text" name="username" /></td>
-            </tr>
-            <tr>
-                <td>Password:</td>
-                <td><input type="password" name="password" /></td>
-            </tr>
-			
-            <tr>
-                <td><input name="submit" type="submit" value="submit" /></td>
-            </tr>
-        </table>
+        <tr>
+            <td><input name="submit" type="submit" value="submit"/></td>
+        </tr>
+    </table>
 
-    </form>
-
+    <p style="color: red" id="error-message">
+        <script>
+            var error = new URLSearchParams(window.location.search).get('error');
+            if(error) document.write(error);
+        </script>
+    </p>
+</form>
 </body>
 </html>
